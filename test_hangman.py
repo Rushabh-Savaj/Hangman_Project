@@ -60,8 +60,50 @@ class TestHangmanSingle(unittest.TestCase):
         game.start("basic")
         self.assertEqual(game.state.masked.replace(" ",""), MASK_CHAR*3)
         game.guess("A")
-        self.assertIn("A", game.state.masked)
-        self.assertNotIn("B", game.state.masked.replace(" ", ""))
+        self.assertIn("A", game.state.masked) 
+        self.assertNotIn("B", game.state.masked.replace(" ", " "))
+
+    def test_case_insensitive_guess(self):
+        game = HangmanEngine(["DOG"], ["BIG CAT"], lives=3, rng=self._seed)
+        game.start("basic")
+        game.guess("d")
+        game.guess("o")
+        snap = game.guess("G")
+        self.assertTrue(snap.is_won)
+
+    def test_phrase_whitespace_preserved(self):
+        game = HangmanEngine(["DOG"], ["BIG CAT"], lives=3, rng=self._seed)
+        snap = game.start("intermediate")
+        self.assertIn(" ", snap.answer)
+        self.assertIn(" ", snap.masked)
+
+    def test_guess_before_start_raises(self):
+        game = HangmanEngine(["DOG"], ["BIG CAT"], lives=3, rng=self._seed)
+        with self.assertRaises(RuntimeError):
+            game.guess("D")
+
+    def test_timeout_before_start_raises(self):
+        game = HangmanEngine(["DOG"], ["BIG CAT"], lives=3, rng=self._seed)
+        with self.assertRaises(RuntimeError):
+            game.timeout()
+
+    def test_multiple_wrong_guesses_reduce_lives(self):
+        game = HangmanEngine(["DOG"], ["BIG CAT"], lives=4, rng=self._seed)
+        game.start("basic")
+        game.guess("X")
+        game.guess("Y")
+        snap = game.guess("Z")
+        self.assertEqual(snap.lives, 1)
+
+    def test_win_on_last_life(self):
+        game = HangmanEngine(["DOG"], ["BIG CAT"], lives=2, rng=self._seed)
+        game.start("basic")
+        game.guess("X")
+        game.guess("D")
+        game.guess("O")
+        snap = game.guess("G")
+        self.assertTrue(snap.is_won)
+        self.assertEqual(snap.lives, 1)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
